@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BrickCraft — Build big. Spend zero.</title>
+    <meta name="description" content="A tiny, friendly 3D brick-building world." />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div>
+            <div class="brand-name">BrickCraft</div>
+            <div class="brand-tagline">BUILD BIG. SPEND ZERO.</div>
+          </div>
+        </div>
+
+        <div class="world-status">
+          <span class="status-dot"></span>
+          <span>JULES' BACKYARD</span>
+          <span class="status-divider"></span>
+          <span class="muted">LOCAL WORLD</span>
+        </div>
+
+        <div class="top-actions">
+          <button class="icon-button" id="reset-world" title="Reset your build" aria-label="Reset your build">↺</button>
+          <button class="avatar-button" title="Builder profile">J</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="panel left-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">THE TOOLBOX</p>
+              <h1>Pick a piece</h1>
+            </div>
+            <span class="keyboard-hint">1—4</span>
+          </div>
+
+          <div class="part-list" id="part-list">
+            <button class="part-card active" data-part="brick2x4">
+              <span class="part-art brick-art red"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+              <span class="part-copy"><strong>Brick 2 × 4</strong><small>THE CLASSIC</small></span>
+              <span class="part-key">1</span>
+            </button>
+            <button class="part-card" data-part="brick2x2">
+              <span class="part-art brick-art blue"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+              <span class="part-copy"><strong>Brick 2 × 2</strong><small>THE HANDY ONE</small></span>
+              <span class="part-key">2</span>
+            </button>
+            <button class="part-card" data-part="plate4x4">
+              <span class="part-art plate-art yellow"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+              <span class="part-copy"><strong>Plate 4 × 4</strong><small>THIN &amp; TOUGH</small></span>
+              <span class="part-key">3</span>
+            </button>
+            <button class="part-card" data-part="slope2x2">
+              <span class="part-art slope-art green"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+              <span class="part-copy"><strong>Slope 2 × 2</strong><small>ADD SOME SHAPE</small></span>
+              <span class="part-key">4</span>
+            </button>
+            <button class="part-card" data-part="tnt">
+              <span class="part-art tnt-art"><b>TNT</b></span>
+              <span class="part-copy"><strong>TNT Crate</strong><small>HANDLE WITH CARE</small></span>
+              <span class="part-key">5</span>
+            </button>
+          </div>
+
+          <div class="section-rule"></div>
+          <div class="section-label">COLOR PALETTE</div>
+          <div class="color-grid" id="color-grid" aria-label="Brick colors">
+            <button class="color-swatch active" data-color="red" style="--swatch:#e94a4d" title="Bright red"></button>
+            <button class="color-swatch" data-color="blue" style="--swatch:#2284c6" title="Bright blue"></button>
+            <button class="color-swatch" data-color="yellow" style="--swatch:#f5c542" title="Bright yellow"></button>
+            <button class="color-swatch" data-color="green" style="--swatch:#36a66d" title="Bright green"></button>
+            <button class="color-swatch" data-color="orange" style="--swatch:#f1843d" title="Bright orange"></button>
+            <button class="color-swatch" data-color="white" style="--swatch:#f5f3ea" title="Warm white"></button>
+            <button class="color-swatch" data-color="black" style="--swatch:#28313b" title="Black"></button>
+            <button class="color-swatch" data-color="lavender" style="--swatch:#9a7bd1" title="Lavender"></button>
+          </div>
+
+          <div class="tip-card">
+            <span class="tip-icon">✦</span>
+            <div><strong>BUILD TIP</strong><p>Start with a plate to make a base. Then stack up!</p></div>
+          </div>
+        </aside>
+
+        <section class="game-frame">
+          <div class="game-canvas-wrap" id="game-canvas-wrap">
+            <canvas id="game-canvas"></canvas>
+            <div class="crosshair" aria-hidden="true"><span></span></div>
+            <div class="scene-label top-left-label"><span class="tiny-dot"></span> BUILD MODE</div>
+            <div class="scene-label top-right-label">GRID 22 × 22</div>
+            <div class="bottom-guide">
+              <span><b class="mouse-icon">LMB</b> PLACE</span>
+              <span><b class="mouse-icon right">RMB</b> REMOVE</span>
+              <span><b class="keycap">WASD</b> MOVE</span>
+              <span><b class="keycap">Q / E</b> ROTATE</span>
+              <span><b class="keycap">ESC</b> RELEASE MOUSE</span>
+            </div>
+            <div class="start-prompt" id="start-prompt">
+              <div class="prompt-orb">+</div>
+              <strong>Click the world to build</strong>
+              <span>Move with WASD · look with your mouse</span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel right-panel">
+          <div class="panel-heading compact-heading">
+            <div>
+              <p class="eyebrow">YOUR WORLD</p>
+              <h2>Build stats</h2>
+            </div>
+            <span class="live-pill"><span></span> LIVE</span>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card"><span class="stat-value" id="brick-count">18</span><span class="stat-label">BRICKS PLACED</span></div>
+            <div class="stat-card"><span class="stat-value" id="height-count">3</span><span class="stat-label">HIGHEST LEVEL</span></div>
+          </div>
+
+          <div class="section-rule"></div>
+          <div class="section-label">CURRENT PIECE</div>
+          <div class="current-piece-card">
+            <div class="current-piece-preview" id="current-piece-preview"><span class="preview-stud s1"></span><span class="preview-stud s2"></span><span class="preview-stud s3"></span><span class="preview-stud s4"></span></div>
+            <div><strong id="current-piece-name">Brick 2 × 4</strong><p id="current-piece-meta">Bright red · 2 × 4</p></div>
+          </div>
+
+          <div class="section-rule"></div>
+          <div class="section-label">QUICK CONTROLS</div>
+          <div class="control-list">
+            <div class="control-row"><span>Move</span><span class="key-group"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></div>
+            <div class="control-row"><span>Rotate piece</span><span class="key-group"><kbd>Q</kbd><kbd>E</kbd></span></div>
+            <div class="control-row"><span>Release mouse</span><kbd>ESC</kbd></div>
+          </div>
+
+          <div class="world-note">
+            <div class="note-star">✦</div>
+            <div><strong>NO PAYWALLS HERE.</strong><p>Every piece is yours. Go make something weird.</p></div>
+          </div>
+        </aside>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./ui.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
