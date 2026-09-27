@@ -34,10 +34,9 @@ button { font: inherit; }
 .status-divider { width: 1px; height: 13px; background: var(--line); margin: 0 4px; }
 .muted { color: #adb4b7; }
 .top-actions { gap: 10px; }
-.icon-button, .avatar-button { border: 1px solid var(--line); background: transparent; cursor: pointer; color: var(--muted); transition: .2s ease; }
+.icon-button { border: 1px solid var(--line); background: transparent; cursor: pointer; color: var(--muted); transition: .2s ease; }
 .icon-button { width: 34px; height: 34px; border-radius: 10px; font-size: 21px; }
 .icon-button:hover { color: var(--accent); border-color: #efb5af; transform: rotate(-30deg); }
-.avatar-button { width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: white; font-weight: 600; border-color: var(--ink); }
 
 .workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: 250px minmax(450px, 1fr) 260px; gap: 16px; padding: 16px; }
 .panel { min-height: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 21px 17px; overflow: auto; }
