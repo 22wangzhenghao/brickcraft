@@ -124,7 +124,9 @@
   }
   function updateGhost(){ if(!ghost)return; target=findTarget(); if(!target){ghost.visible=false;return;} ghost.visible=true; setPosition(ghost,target.x,target.z,target.layer); }
   function place(){if(!target)return;addBlock(selectedPart,selectedColor,target.x,target.z,target.layer,true);updateStats();if(selectedPart!=='tnt')showToast(`${parts[selectedPart].label} placed`);}
-  function toggleDoor(){raycaster.setFromCamera(center,camera);const hit=raycaster.intersectObjects(world.children,true)[0];if(!hit)return false;const root=hit.object.userData.root;if(!root||root.userData.type!=='door'||!root.userData.doorPivot)return false;root.userData.doorOpen=!root.userData.doorOpen;root.userData.doorPivot.rotation.y=root.userData.doorOpen?-Math.PI/2:0;showToast(root.userData.doorOpen?'Door opened':'Door closed');return true;}
+  function worldRoot(object){let node=object;while(node&&node!==world){if(node.userData.root)return node.userData.root;node=node.parent;}return null;}
+  function doorHit(){raycaster.setFromCamera(center,camera);return raycaster.intersectObjects(world.children,true).find(hit=>{const root=worldRoot(hit.object);return root&&root.userData.type==='door';});}
+  function toggleDoor(){const hit=doorHit();if(!hit)return false;const root=worldRoot(hit.object);if(!root.userData.doorPivot)return false;root.userData.doorOpen=!root.userData.doorOpen;root.userData.doorPivot.rotation.y=root.userData.doorOpen?-Math.PI/2:0;showToast(root.userData.doorOpen?'Door opened':'Door closed');return true;}
   function spawnEffect(mesh, velocity, life, update){scene.add(mesh);effects.push({mesh,velocity:velocity||new THREE.Vector3(),life:0,maxLife:life,update});}
   function explode(tnt){if(!tnt.parent)return;const centerPoint=tnt.position.clone();shakeTime=.9;
     const flash=new THREE.Mesh(new THREE.SphereGeometry(.45,24,16),new THREE.MeshBasicMaterial({color:'#fff1a8',transparent:true,opacity:.95,blending:THREE.AdditiveBlending}));flash.position.copy(centerPoint);spawnEffect(flash,new THREE.Vector3(),.42,e=>{const p=1-e.life/e.maxLife;e.mesh.scale.setScalar(1+5*(1-p));e.mesh.material.opacity=p;});
@@ -144,13 +146,16 @@
   function move(dt){if(!focused&&!document.pointerLockElement)return;const speed=3.2*dt,forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),next=new THREE.Vector3(cameraState.x,cameraState.y,cameraState.z);if(keys.has('KeyW'))next.addScaledVector(forward,speed);if(keys.has('KeyS'))next.addScaledVector(forward,-speed);if(keys.has('KeyA'))next.addScaledVector(right,-speed);if(keys.has('KeyD'))next.addScaledVector(right,speed);verticalVelocity-=14*dt;const previousY=cameraState.y;let nextY=cameraState.y+verticalVelocity*dt;const landing=landingHeight(next.x,next.z,previousY,nextY);if(landing!==null){nextY=landing+eyeHeight;verticalVelocity=0;}if(nextY<=eyeHeight){nextY=eyeHeight;verticalVelocity=0;}if(!collides(next.x,next.z,nextY))cameraState.x=next.x,cameraState.z=next.z;cameraState.y=nextY;cameraState.x=THREE.MathUtils.clamp(cameraState.x,-bounds*stud,bounds*stud);cameraState.z=THREE.MathUtils.clamp(cameraState.z,-bounds*stud,bounds*stud+2);if(keys.has('ArrowUp'))pitch=Math.min(.65,pitch+.015);if(keys.has('ArrowDown'))pitch=Math.max(-.65,pitch-.015);}
 
   window.addEventListener('brickcraft:part',event=>setPart(event.detail)); window.addEventListener('brickcraft:color',event=>setColor(event.detail)); window.addEventListener('brickcraft:reset',reset);
+  let doorHandledOnPointerDown=false;
   canvas.addEventListener('pointerdown',event=>{
     if(event.button===2){event.preventDefault();focused=true;startPrompt.classList.add('hidden');remove();return;}
+    if(event.button===0&&toggleDoor()){event.preventDefault();doorHandledOnPointerDown=true;focused=true;dragging=true;lastPointer={x:event.clientX,y:event.clientY};startPrompt.classList.add('hidden');canvas.setPointerCapture?.(event.pointerId);canvas.requestPointerLock?.();return;}
+    doorHandledOnPointerDown=false;
     focused=true;dragging=true;lastPointer={x:event.clientX,y:event.clientY};startPrompt.classList.add('hidden');canvas.setPointerCapture?.(event.pointerId);canvas.requestPointerLock?.();
   });
   canvas.addEventListener('pointerup',()=>dragging=false);
   canvas.addEventListener('pointermove',event=>{if(document.pointerLockElement!==canvas&&!dragging)return;const dx=document.pointerLockElement===canvas?event.movementX:event.clientX-lastPointer.x,dy=document.pointerLockElement===canvas?event.movementY:event.clientY-lastPointer.y;lastPointer={x:event.clientX,y:event.clientY};yaw-=dx*.0022;pitch=THREE.MathUtils.clamp(pitch-dy*.0022,-.65,.65);});
-  canvas.addEventListener('click',event=>{if(event.button===0&&!toggleDoor())place();}); canvas.addEventListener('contextmenu',event=>event.preventDefault());
+  canvas.addEventListener('click',event=>{if(event.button!==0)return;if(doorHandledOnPointerDown){doorHandledOnPointerDown=false;return;}if(!toggleDoor())place();}); canvas.addEventListener('contextmenu',event=>event.preventDefault());
   document.addEventListener('keydown',event=>{keys.add(event.code);if(event.code==='Space'){event.preventDefault();jump();}if(event.code==='KeyQ'){rotation=(rotation+3)%4;makeGhost();}if(event.code==='KeyE'){rotation=(rotation+1)%4;makeGhost();}if(event.code==='Escape'){focused=false;dragging=false;}}); document.addEventListener('keyup',event=>keys.delete(event.code));
 
   camera.position.set(cameraState.x,cameraState.y,cameraState.z); starter(); makeGhost();
