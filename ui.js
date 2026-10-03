@@ -10,7 +10,7 @@
     plate4x4: ['Plate 4 × 4', '4 × 4'],
     slope2x2: ['Slope 2 × 2', '2 × 2'],
     tnt: ['TNT Crate', '2 × 2'],
-    door: ['Door 2 × 3', '2 × 3'],
+    door: ['Door 3 × 4', '3 × 4'],
     window: ['Window 2 × 2', '2 × 2']
   };
 

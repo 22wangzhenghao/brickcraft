@@ -35,7 +35,7 @@
     plate4x4: { label:'Plate 4 × 4', meta:'4 × 4', w:4, d:4, h:.34, kind:'plate' },
     slope2x2: { label:'Slope 2 × 2', meta:'2 × 2', w:2, d:2, h:1, kind:'slope' },
     tnt: { label:'TNT Crate', meta:'2 × 2', w:2, d:2, h:1, kind:'tnt' },
-    door: { label:'Door 2 × 3', meta:'2 × 3', w:2, d:1, h:3, kind:'door' },
+    door: { label:'Door 3 × 4', meta:'3 × 4', w:3, d:1, h:4, kind:'door' },
     window: { label:'Window 2 × 2', meta:'2 × 2', w:2, d:1, h:2, kind:'window' }
   };
   let selectedPart = 'brick2x4', selectedColor = 'red', rotation = 0;
@@ -76,16 +76,24 @@
       const indices=[0,1,2, 0,2,3, 0,4,5, 0,5,1, 1,5,2, 2,5,4, 2,4,3, 3,4,0];
       geometry=new THREE.BufferGeometry(); geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3)); geometry.setIndex(indices); geometry.computeVertexNormals();
     } else geometry=new THREE.BoxGeometry(width,h,depth);
-    const body = new THREE.Mesh(geometry, mat);
-    body.castShadow = !transparent; body.receiveShadow = !transparent; root.add(body);
+    if(data.kind==='door') {
+      const postGeo = new THREE.BoxGeometry(.18,h,depth);
+      const leftPost = new THREE.Mesh(postGeo,mat), rightPost = new THREE.Mesh(postGeo,mat);
+      leftPost.position.x=-width/2+.09; rightPost.position.x=width/2-.09; root.add(leftPost,rightPost);
+      const header = new THREE.Mesh(new THREE.BoxGeometry(width,.18,depth),mat); header.position.y=h/2-.09; root.add(header);
+      const panelMat = new THREE.MeshStandardMaterial({ color:'#6d4134', roughness:.8, transparent, opacity:transparent ? .35 : 1, depthWrite:!transparent });
+      const panelWidth=width-.34, panel = new THREE.Mesh(new THREE.BoxGeometry(panelWidth,h-.34,depth*.68),panelMat);
+      const pivot = new THREE.Group(); pivot.position.set(-width/2+.17,0,0); panel.position.set(panelWidth/2,-.02,0); pivot.add(panel); root.add(pivot);
+      const knob = new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),new THREE.MeshStandardMaterial({color:'#f5c542',transparent,opacity:transparent ? .35 : 1,depthWrite:!transparent})); knob.position.set(panelWidth*.7,0,depth*.38); panel.add(knob);
+      root.userData.doorPivot=pivot; root.userData.doorOpen=false;
+    } else {
+      const body = new THREE.Mesh(geometry, mat);
+      body.castShadow = !transparent; body.receiveShadow = !transparent; root.add(body);
+    }
     if(data.kind==='tnt') {
       const bandMat = new THREE.MeshStandardMaterial({ color:'#f5f3ea', transparent, opacity:transparent ? .35 : 1, depthWrite:!transparent });
       const band = new THREE.Mesh(new THREE.BoxGeometry(width+.025, h*.34, depth+.025), bandMat); band.position.y = 0; band.castShadow = !transparent; root.add(band);
       root.userData.fuseMaterial = mat;
-    } else if(data.kind==='door') {
-      const panelMat = new THREE.MeshStandardMaterial({ color:'#6d4134', roughness:.8, transparent, opacity:transparent ? .35 : 1, depthWrite:!transparent });
-      const panel = new THREE.Mesh(new THREE.BoxGeometry(width*.72,h*.9,depth+.03),panelMat); panel.position.y=-.02; root.add(panel);
-      const knob = new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),new THREE.MeshStandardMaterial({color:'#f5c542',transparent,opacity:transparent ? .35 : 1,depthWrite:!transparent})); knob.position.set(width*.25,0,.05); root.add(knob);
     } else if(data.kind==='window') {
       const frameMat = new THREE.MeshStandardMaterial({ color:'#f5f3ea', roughness:.7, transparent, opacity:transparent ? .35 : 1, depthWrite:!transparent });
       const paneMat = new THREE.MeshStandardMaterial({ color:'#83c9d3', roughness:.25, metalness:.05, transparent:true, opacity:transparent ? .2 : .82, depthWrite:!transparent });
@@ -116,6 +124,7 @@
   }
   function updateGhost(){ if(!ghost)return; target=findTarget(); if(!target){ghost.visible=false;return;} ghost.visible=true; setPosition(ghost,target.x,target.z,target.layer); }
   function place(){if(!target)return;addBlock(selectedPart,selectedColor,target.x,target.z,target.layer,true);updateStats();if(selectedPart!=='tnt')showToast(`${parts[selectedPart].label} placed`);}
+  function toggleDoor(){raycaster.setFromCamera(center,camera);const hit=raycaster.intersectObjects(world.children,true)[0];if(!hit)return false;const root=hit.object.userData.root;if(!root||root.userData.type!=='door'||!root.userData.doorPivot)return false;root.userData.doorOpen=!root.userData.doorOpen;root.userData.doorPivot.rotation.y=root.userData.doorOpen?-Math.PI/2:0;showToast(root.userData.doorOpen?'Door opened':'Door closed');return true;}
   function spawnEffect(mesh, velocity, life, update){scene.add(mesh);effects.push({mesh,velocity:velocity||new THREE.Vector3(),life:0,maxLife:life,update});}
   function explode(tnt){if(!tnt.parent)return;const centerPoint=tnt.position.clone();shakeTime=.9;
     const flash=new THREE.Mesh(new THREE.SphereGeometry(.45,24,16),new THREE.MeshBasicMaterial({color:'#fff1a8',transparent:true,opacity:.95,blending:THREE.AdditiveBlending}));flash.position.copy(centerPoint);spawnEffect(flash,new THREE.Vector3(),.42,e=>{const p=1-e.life/e.maxLife;e.mesh.scale.setScalar(1+5*(1-p));e.mesh.material.opacity=p;});
@@ -128,7 +137,7 @@
   function remove(){raycaster.setFromCamera(center,camera);const hit=raycaster.intersectObjects(world.children,true)[0];if(!hit)return;const root=hit.object.userData.root;if(!root)return;world.remove(root);const i=blocks.indexOf(root);if(i>=0)blocks.splice(i,1);stats.placed=Math.max(0,stats.placed-1);stats.highest=blocks.length?Math.max(...blocks.map(block=>Math.ceil(block.userData.top))):0;updateStats();showToast('Piece removed');}
   function showToast(message){const toast=document.querySelector('#toast');toast.textContent=message;toast.classList.add('show');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>toast.classList.remove('show'),1200);}
   function reset(){blocks.slice().forEach(block=>world.remove(block));blocks=[];effects.forEach(effect=>scene.remove(effect.mesh));effects=[];shakeTime=0;verticalVelocity=0;cameraState.x=0;cameraState.y=eyeHeight;cameraState.z=8;yaw=0;pitch=-.12;rotation=0;stats.placed=0;stats.highest=0;starter();showToast('Fresh canvas ready.');}
-  function overlapsBlock(block,x,z,radius=.34){const data=parts[block.userData.type];return Math.abs(x-block.position.x)<data.w*stud/2+radius&&Math.abs(z-block.position.z)<data.d*stud/2+radius;}
+  function overlapsBlock(block,x,z,radius=.34){if(block.userData.type==='door'&&block.userData.doorOpen)return false;const data=parts[block.userData.type];return Math.abs(x-block.position.x)<data.w*stud/2+radius&&Math.abs(z-block.position.z)<data.d*stud/2+radius;}
   function collides(x,z,y){const foot=y-eyeHeight;return blocks.some(block=>overlapsBlock(block,x,z)&&foot<block.userData.top+.08&&foot+1.8>block.userData.layer);}
   function landingHeight(x,z,previousY,nextY){if(verticalVelocity>=0)return null;const previousFoot=previousY-eyeHeight,nextFoot=nextY-eyeHeight;let landing=null;blocks.forEach(block=>{if(!overlapsBlock(block,x,z)||previousFoot<block.userData.top-.03||nextFoot>block.userData.top+.03)return;landing=Math.max(landing===null?0:landing,block.userData.top);});return landing;}
   function jump(){if(verticalVelocity===0)verticalVelocity=6.4;}
@@ -141,7 +150,7 @@
   });
   canvas.addEventListener('pointerup',()=>dragging=false);
   canvas.addEventListener('pointermove',event=>{if(document.pointerLockElement!==canvas&&!dragging)return;const dx=document.pointerLockElement===canvas?event.movementX:event.clientX-lastPointer.x,dy=document.pointerLockElement===canvas?event.movementY:event.clientY-lastPointer.y;lastPointer={x:event.clientX,y:event.clientY};yaw-=dx*.0022;pitch=THREE.MathUtils.clamp(pitch-dy*.0022,-.65,.65);});
-  canvas.addEventListener('click',event=>{if(event.button===0)place();}); canvas.addEventListener('contextmenu',event=>event.preventDefault());
+  canvas.addEventListener('click',event=>{if(event.button===0&&!toggleDoor())place();}); canvas.addEventListener('contextmenu',event=>event.preventDefault());
   document.addEventListener('keydown',event=>{keys.add(event.code);if(event.code==='Space'){event.preventDefault();jump();}if(event.code==='KeyQ'){rotation=(rotation+3)%4;makeGhost();}if(event.code==='KeyE'){rotation=(rotation+1)%4;makeGhost();}if(event.code==='Escape'){focused=false;dragging=false;}}); document.addEventListener('keyup',event=>keys.delete(event.code));
 
   camera.position.set(cameraState.x,cameraState.y,cameraState.z); starter(); makeGhost();
