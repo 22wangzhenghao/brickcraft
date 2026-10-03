@@ -66,6 +66,11 @@ button { font: inherit; }
 .slope-art i { width: 6px; height: 6px; }
 .tnt-art { height: 38px; display: grid; place-items: center; padding: 0; background: repeating-linear-gradient(135deg, #e94a4d 0 8px, #f5f3ea 8px 13px); color: #28313b; text-shadow: 0 1px rgba(255,255,255,.45); }
 .tnt-art b { font: 700 10px 'DM Mono', monospace; letter-spacing: -.06em; background: rgba(255,255,255,.78); padding: 2px 3px; border-radius: 2px; }
+.door-art { height: 38px; padding: 4px 14px; background: #9a5d3b; }
+.door-art i { width: 21px; height: 30px; display: block; border: 2px solid #f5c542; border-bottom: 0; border-radius: 3px 3px 0 0; background: #6d4134; position: relative; }
+.door-art i::after { content: ''; position: absolute; right: 3px; top: 15px; width: 3px; height: 3px; border-radius: 50%; background: #f5c542; }
+.window-art { height: 38px; padding: 6px 10px; background: #8b705c; }
+.window-art i { width: 30px; height: 24px; display: block; border: 3px solid #f5f3ea; background: linear-gradient(90deg, #83c9d3 47%, #f5f3ea 47% 53%, #83c9d3 53%), linear-gradient(#83c9d3 47%, #f5f3ea 47% 53%, #83c9d3 53%); background-blend-mode: multiply; }
 .section-rule { height: 1px; background: var(--line); margin: 19px 0; }
 .section-label { margin-bottom: 11px; }
 .color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }

@@ -9,7 +9,9 @@
     brick2x2: ['Brick 2 × 2', '2 × 2'],
     plate4x4: ['Plate 4 × 4', '4 × 4'],
     slope2x2: ['Slope 2 × 2', '2 × 2'],
-    tnt: ['TNT Crate', '2 × 2']
+    tnt: ['TNT Crate', '2 × 2'],
+    door: ['Door 2 × 3', '2 × 3'],
+    window: ['Window 2 × 2', '2 × 2']
   };
 
   function paintPreview() {
@@ -58,7 +60,7 @@
   });
 
   document.addEventListener('keydown', event => {
-    const shortcuts = { Digit1: 'brick2x4', Digit2: 'brick2x2', Digit3: 'plate4x4', Digit4: 'slope2x2', Digit5: 'tnt' };
+    const shortcuts = { Digit1: 'brick2x4', Digit2: 'brick2x2', Digit3: 'plate4x4', Digit4: 'slope2x2', Digit5: 'tnt', Digit6: 'door', Digit7: 'window' };
     if (shortcuts[event.code]) selectPart(shortcuts[event.code]);
   });
 

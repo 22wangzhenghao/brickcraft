@@ -26,7 +26,7 @@
   const sun = new THREE.DirectionalLight('#fff3cf', 3.2);
   sun.position.set(-10, 18, 9); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); scene.add(sun);
 
-  const bounds = 11;
+  const bounds = 15;
   const stud = .58;
   const palette = { red:'#e94a4d', blue:'#2284c6', yellow:'#f5c542', green:'#36a66d', orange:'#f1843d', white:'#f5f3ea', black:'#28313b', lavender:'#9a7bd1' };
   const parts = {
@@ -34,13 +34,16 @@
     brick2x2: { label:'Brick 2 × 2', meta:'2 × 2', w:2, d:2, h:1, kind:'brick' },
     plate4x4: { label:'Plate 4 × 4', meta:'4 × 4', w:4, d:4, h:.34, kind:'plate' },
     slope2x2: { label:'Slope 2 × 2', meta:'2 × 2', w:2, d:2, h:1, kind:'slope' },
-    tnt: { label:'TNT Crate', meta:'2 × 2', w:2, d:2, h:1, kind:'tnt' }
+    tnt: { label:'TNT Crate', meta:'2 × 2', w:2, d:2, h:1, kind:'tnt' },
+    door: { label:'Door 2 × 3', meta:'2 × 3', w:2, d:1, h:3, kind:'door' },
+    window: { label:'Window 2 × 2', meta:'2 × 2', w:2, d:1, h:2, kind:'window' }
   };
   let selectedPart = 'brick2x4', selectedColor = 'red', rotation = 0;
   let blocks = [], target = null, ghost = null, effects = [];
   let yaw = 0, pitch = -.12, focused = false, dragging = false, lastPointer = { x:0, y:0 }, shakeTime = 0;
   const keys = new Set();
-  const cameraState = { x:0, y:3.4, z:15 };
+  const eyeHeight = 3.4;
+  const cameraState = { x:0, y:eyeHeight, z:8 };
   let verticalVelocity = 0;
   const stats = { placed:0, highest:0 };
   const raycaster = new THREE.Raycaster();
@@ -79,6 +82,16 @@
       const bandMat = new THREE.MeshStandardMaterial({ color:'#f5f3ea', transparent, opacity:transparent ? .35 : 1, depthWrite:!transparent });
       const band = new THREE.Mesh(new THREE.BoxGeometry(width+.025, h*.34, depth+.025), bandMat); band.position.y = 0; band.castShadow = !transparent; root.add(band);
       root.userData.fuseMaterial = mat;
+    } else if(data.kind==='door') {
+      const panelMat = new THREE.MeshStandardMaterial({ color:'#6d4134', roughness:.8, transparent, opacity:transparent ? .35 : 1, depthWrite:!transparent });
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(width*.72,h*.9,depth+.03),panelMat); panel.position.y=-.02; root.add(panel);
+      const knob = new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),new THREE.MeshStandardMaterial({color:'#f5c542',transparent,opacity:transparent ? .35 : 1,depthWrite:!transparent})); knob.position.set(width*.25,0,.05); root.add(knob);
+    } else if(data.kind==='window') {
+      const frameMat = new THREE.MeshStandardMaterial({ color:'#f5f3ea', roughness:.7, transparent, opacity:transparent ? .35 : 1, depthWrite:!transparent });
+      const paneMat = new THREE.MeshStandardMaterial({ color:'#83c9d3', roughness:.25, metalness:.05, transparent:true, opacity:transparent ? .2 : .82, depthWrite:!transparent });
+      const pane = new THREE.Mesh(new THREE.BoxGeometry(width*.72,h*.65,depth+.035),paneMat); pane.position.y=.02; root.add(pane);
+      const mullionV = new THREE.Mesh(new THREE.BoxGeometry(.06,h*.7,depth+.06),frameMat); root.add(mullionV);
+      const mullionH = new THREE.Mesh(new THREE.BoxGeometry(width*.78,.06,depth+.06),frameMat); root.add(mullionH);
     } else if(data.kind!=='slope') root.add(makeStuds(data, mat));
     root.userData.type = type; root.userData.height = data.h; root.userData.root = root;
     root.traverse(node=>{node.userData.root=root;});
@@ -114,10 +127,12 @@
   function updateEffects(dt){for(let i=effects.length-1;i>=0;i--){const effect=effects[i];effect.life+=dt;if(effect.update)effect.update(effect);if(effect.mesh.position)effect.mesh.position.addScaledVector(effect.velocity,dt);if(effect.life>=effect.maxLife){scene.remove(effect.mesh);effects.splice(i,1);}}}
   function remove(){raycaster.setFromCamera(center,camera);const hit=raycaster.intersectObjects(world.children,true)[0];if(!hit)return;const root=hit.object.userData.root;if(!root)return;world.remove(root);const i=blocks.indexOf(root);if(i>=0)blocks.splice(i,1);stats.placed=Math.max(0,stats.placed-1);stats.highest=blocks.length?Math.max(...blocks.map(block=>Math.ceil(block.userData.top))):0;updateStats();showToast('Piece removed');}
   function showToast(message){const toast=document.querySelector('#toast');toast.textContent=message;toast.classList.add('show');clearTimeout(showToast.timer);showToast.timer=setTimeout(()=>toast.classList.remove('show'),1200);}
-  function reset(){blocks.slice().forEach(block=>world.remove(block));blocks=[];effects.forEach(effect=>scene.remove(effect.mesh));effects=[];shakeTime=0;verticalVelocity=0;cameraState.x=0;cameraState.y=3.4;cameraState.z=15;yaw=0;pitch=-.12;rotation=0;stats.placed=0;stats.highest=0;starter();showToast('Fresh canvas ready.');}
-  function collides(x,z){return blocks.some(block=>{const data=parts[block.userData.type],pad=.7;return x>block.userData.x*stud-pad&&x<(block.userData.x+data.w)*stud+pad&&z>block.userData.z*stud-pad&&z<(block.userData.z+data.d)*stud+pad&&block.userData.top>.5;});}
-  function jump(){if(cameraState.y<=3.401&&verticalVelocity<=0)verticalVelocity=5.2;}
-  function move(dt){if(!focused&&!document.pointerLockElement)return;const speed=3.2*dt,forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),next=new THREE.Vector3(cameraState.x,cameraState.y,cameraState.z);if(keys.has('KeyW'))next.addScaledVector(forward,speed);if(keys.has('KeyS'))next.addScaledVector(forward,-speed);if(keys.has('KeyA'))next.addScaledVector(right,-speed);if(keys.has('KeyD'))next.addScaledVector(right,speed);if(!collides(next.x,next.z))cameraState.x=next.x,cameraState.z=next.z;verticalVelocity-=14*dt;cameraState.y+=verticalVelocity*dt;if(cameraState.y<=3.4){cameraState.y=3.4;verticalVelocity=0;}cameraState.x=THREE.MathUtils.clamp(cameraState.x,-bounds*stud,bounds*stud);cameraState.z=THREE.MathUtils.clamp(cameraState.z,-bounds*stud,bounds*stud+3);if(keys.has('ArrowUp'))pitch=Math.min(.65,pitch+.015);if(keys.has('ArrowDown'))pitch=Math.max(-.65,pitch-.015);}
+  function reset(){blocks.slice().forEach(block=>world.remove(block));blocks=[];effects.forEach(effect=>scene.remove(effect.mesh));effects=[];shakeTime=0;verticalVelocity=0;cameraState.x=0;cameraState.y=eyeHeight;cameraState.z=8;yaw=0;pitch=-.12;rotation=0;stats.placed=0;stats.highest=0;starter();showToast('Fresh canvas ready.');}
+  function overlapsBlock(block,x,z,radius=.34){const data=parts[block.userData.type];return Math.abs(x-block.position.x)<data.w*stud/2+radius&&Math.abs(z-block.position.z)<data.d*stud/2+radius;}
+  function collides(x,z,y){const foot=y-eyeHeight;return blocks.some(block=>overlapsBlock(block,x,z)&&foot<block.userData.top+.08&&foot+1.8>block.userData.layer);}
+  function landingHeight(x,z,previousY,nextY){if(verticalVelocity>=0)return null;const previousFoot=previousY-eyeHeight,nextFoot=nextY-eyeHeight;let landing=null;blocks.forEach(block=>{if(!overlapsBlock(block,x,z)||previousFoot<block.userData.top-.03||nextFoot>block.userData.top+.03)return;landing=Math.max(landing===null?0:landing,block.userData.top);});return landing;}
+  function jump(){if(verticalVelocity===0)verticalVelocity=6.4;}
+  function move(dt){if(!focused&&!document.pointerLockElement)return;const speed=3.2*dt,forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),next=new THREE.Vector3(cameraState.x,cameraState.y,cameraState.z);if(keys.has('KeyW'))next.addScaledVector(forward,speed);if(keys.has('KeyS'))next.addScaledVector(forward,-speed);if(keys.has('KeyA'))next.addScaledVector(right,-speed);if(keys.has('KeyD'))next.addScaledVector(right,speed);verticalVelocity-=14*dt;const previousY=cameraState.y;let nextY=cameraState.y+verticalVelocity*dt;const landing=landingHeight(next.x,next.z,previousY,nextY);if(landing!==null){nextY=landing+eyeHeight;verticalVelocity=0;}if(nextY<=eyeHeight){nextY=eyeHeight;verticalVelocity=0;}if(!collides(next.x,next.z,nextY))cameraState.x=next.x,cameraState.z=next.z;cameraState.y=nextY;cameraState.x=THREE.MathUtils.clamp(cameraState.x,-bounds*stud,bounds*stud);cameraState.z=THREE.MathUtils.clamp(cameraState.z,-bounds*stud,bounds*stud+2);if(keys.has('ArrowUp'))pitch=Math.min(.65,pitch+.015);if(keys.has('ArrowDown'))pitch=Math.max(-.65,pitch-.015);}
 
   window.addEventListener('brickcraft:part',event=>setPart(event.detail)); window.addEventListener('brickcraft:color',event=>setColor(event.detail)); window.addEventListener('brickcraft:reset',reset);
   canvas.addEventListener('pointerdown',event=>{
