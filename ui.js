@@ -13,6 +13,15 @@
     door: ['Door 3 × 4', '3 × 4'],
     window: ['Window 2 × 2', '2 × 2']
   };
+  const partOrder = ['brick2x4', 'brick2x2', 'plate4x4', 'slope2x2', 'tnt', 'door', 'window'];
+
+  function normalizePartOrder() {
+    const list = document.querySelector('#part-list');
+    if (!list) return;
+    const cards = [...list.querySelectorAll('.part-card')];
+    cards.sort((a, b) => partOrder.indexOf(a.dataset.part) - partOrder.indexOf(b.dataset.part));
+    cards.forEach(card => list.appendChild(card));
+  }
 
   function paintPreview() {
     const preview = document.querySelector('#current-piece-preview');
@@ -64,5 +73,6 @@
     if (shortcuts[event.code]) selectPart(shortcuts[event.code]);
   });
 
+  normalizePartOrder();
   paintPreview();
 })();
